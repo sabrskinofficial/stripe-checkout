@@ -22,12 +22,8 @@ export default async function handler(req, res) {
       cancel_url: "https://example.com/cancel",
     });
 
-    // 🔥 IMPORTANT: always redirect if opened in browser
-    if (req.method === "GET") {
-      return res.redirect(session.url);
-    }
-
-    return res.status(200).json({ url: session.url });
+    // 💥 THIS IS THE FIX
+    return res.redirect(303, session.url);
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
