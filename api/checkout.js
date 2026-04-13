@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       cancel_url: "https://example.com/cancel",
     });
 
-    
+   
     return res.redirect(303, session.url);
 
   } catch (err) {
