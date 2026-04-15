@@ -2,55 +2,63 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+const PROMO_CODES = {
+  SABR10: 0.1,
+  WELCOME15: 0.15,
+  BIRTHDAY20: 0.2,
+  SKIN5: 0.05,
+};
+
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-  
-    const amountRaw = req.query.amount;
-    const amount = Number(amountRaw);
+    const { cart, promoCode } = req.body;
 
-    console.log("RAW AMOUNT:", amountRaw);
-    console.log("PARSED AMOUNT:", amount);
-
- 
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return res.status(500).json({
-        error: "Missing Stripe secret key in Vercel env variables",
-      });
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: "Empty cart" });
     }
 
+
+    let total = cart.reduce((sum, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.quantity) || 1;
+      return sum + price * qty;
+    }, 0);
+
   
-    if (!amountRaw || isNaN(amount) || amount <= 0) {
-      return res.status(400).json({
-        error: "Invalid amount",
-        received: amountRaw,
-      });
+    const discountRate = PROMO_CODES[promoCode?.toUpperCase()] || 0;
+    total = total - total * discountRate;
+
+  
+    const amount = Math.round(total * 100);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
     }
 
- 
     const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
       mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "aud",
-            product_data: {
-              name: "SABR SKIN ORDER",
-            },
-            unit_amount: Math.round(amount * 100), 
+      line_items: cart.map((item) => ({
+        price_data: {
+          currency: "aud",
+          product_data: {
+            name: item.name,
           },
-          quantity: 1,
+          unit_amount: Math.round(Number(item.price) * 100),
         },
-      ],
-      success_url: "https://v0-add-checkout-api.vercel.app/success",
-      cancel_url: "https://v0-add-checkout-api.vercel.app/cancel",
+        quantity: item.quantity || 1,
+      })),
+      success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
     });
 
-    return res.redirect(303, session.url);
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("STRIPE ERROR:", err);
-
-    return res.status(500).json({
-      error: err.message,
-    });
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
   }
 }
