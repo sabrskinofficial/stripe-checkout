@@ -4,7 +4,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   try {
-    const amountRaw = req.query.amount;
+  if (!amount || isNaN(amount)) {
+  return res.status(400).json({ error: "Invalid amount", received: req.query.amount });
+}
 
 const amount = parseFloat(String(req.query.amount).replace(/[^0-9.]/g, ""));
 
