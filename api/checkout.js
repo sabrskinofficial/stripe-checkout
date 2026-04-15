@@ -4,12 +4,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   try {
-    const amount = Number(req.query.amount);
+  
+    const amountRaw = req.query.amount;
+    const amount = Number(amountRaw);
 
-    if (!amount || isNaN(amount) || amount <= 0) {
+    console.log("RAW AMOUNT:", amountRaw);
+    console.log("PARSED AMOUNT:", amount);
+
+    if (!amountRaw || isNaN(amount) || amount <= 0) {
       return res.status(400).json({
         error: "Invalid amount",
-        received: req.query.amount,
+        received: amountRaw,
       });
     }
 
@@ -33,6 +38,7 @@ export default async function handler(req, res) {
 
     return res.redirect(303, session.url);
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: err.message });
   }
 }
