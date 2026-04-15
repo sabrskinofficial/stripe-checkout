@@ -1,7 +1,8 @@
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
+console.log("CHECKOUT HIT");
+console.log("METHOD:", req.method);
 export default async function handler(req, res) {
   console.log("API HIT");
   console.log("METHOD:", req.method);
