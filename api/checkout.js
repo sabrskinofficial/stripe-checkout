@@ -5,8 +5,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export default async function handler(req, res) {
   try {
     const amount = Number(req.query.amount);
-
-    // 🔒 safety check
+const safeTotal = Number(total) || 0;
+const discount = promoApplied ? safeTotal * promoApplied.rate : 0;
+const finalTotal = safeTotal - discount;
+   
     if (!amount || isNaN(amount) || amount <= 0) {
       return res.status(400).json({
         error: "Invalid amount",
