@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const amountRaw = req.query.amount;
 
-    const amount = parseFloat(amountRaw);
+const amount = parseFloat(String(req.query.amount).replace(/[^0-9.]/g, ""));
 
     if (!amountRaw || isNaN(amount)) {
       return res.status(400).json({ error: "Invalid amount" });
