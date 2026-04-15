@@ -1,10 +1,8 @@
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-console.log("CHECKOUT HIT");
-console.log("METHOD:", req.method);
+
 export default async function handler(req, res) {
-  console.log("API HIT");
   console.log("METHOD:", req.method);
 
   if (req.method !== "POST") {
@@ -15,14 +13,8 @@ export default async function handler(req, res) {
     const { cart = [] } = req.body || {};
 
     if (!Array.isArray(cart)) {
-      return res.status(400).json({ error: "Cart invalid" });
+      return res.status(400).json({ error: "Invalid cart" });
     }
-
-    const total = cart.reduce((sum, item) => {
-      return sum + (Number(item.price) || 0) * (Number(item.quantity) || 1);
-    }, 0);
-
-    const amount = Math.round(total * 100);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -37,16 +29,14 @@ export default async function handler(req, res) {
         },
         quantity: item.quantity || 1,
       })),
-      success_url: "https://your-site.com/success",
-      cancel_url: "https://your-site.com/cancel",
+      success_url: "https://YOUR-SITE.vercel.app/success",
+      cancel_url: "https://YOUR-SITE.vercel.app/cancel",
     });
 
     return res.status(200).json({ url: session.url });
+
   } catch (err) {
     console.error("ERROR:", err);
-    return res.status(500).json({
-      error: "Server crashed",
-      details: err.message,
-    });
+    return res.status(500).json({ error: err.message });
   }
 }
