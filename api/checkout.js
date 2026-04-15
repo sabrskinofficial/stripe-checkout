@@ -4,10 +4,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   try {
-    const amount = Number(req.query.amount || 0);
+    const amount = Number(req.query.amount);
 
-    if (amount <= 0) {
-      return res.status(400).json({ error: "Invalid amount" });
+    // 🔒 safety check
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        error: "Invalid amount",
+        received: req.query.amount,
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -17,7 +21,7 @@ export default async function handler(req, res) {
           price_data: {
             currency: "aud",
             product_data: {
-              name: "BASE44 Product",
+              name: "SABR SKIN ORDER",
             },
             unit_amount: Math.round(amount * 100),
           },
@@ -29,7 +33,6 @@ export default async function handler(req, res) {
     });
 
     return res.redirect(303, session.url);
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
