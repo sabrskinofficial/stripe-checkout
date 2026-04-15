@@ -11,6 +11,14 @@ export default async function handler(req, res) {
     console.log("RAW AMOUNT:", amountRaw);
     console.log("PARSED AMOUNT:", amount);
 
+ 
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({
+        error: "Missing Stripe secret key in Vercel env variables",
+      });
+    }
+
+  
     if (!amountRaw || isNaN(amount) || amount <= 0) {
       return res.status(400).json({
         error: "Invalid amount",
@@ -18,6 +26,7 @@ export default async function handler(req, res) {
       });
     }
 
+ 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
@@ -27,17 +36,21 @@ export default async function handler(req, res) {
             product_data: {
               name: "SABR SKIN ORDER",
             },
-            unit_amount: Math.round(amount * 100),
+            unit_amount: Math.round(amount * 100), 
           },
           quantity: 1,
         },
       ],
-     success_url: "https://v0-add-checkout-api.vercel.app/success",
-cancel_url: "https://v0-add-checkout-api.vercel.app/cancel",
+      success_url: "https://v0-add-checkout-api.vercel.app/success",
+      cancel_url: "https://v0-add-checkout-api.vercel.app/cancel",
+    });
 
     return res.redirect(303, session.url);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    console.error("STRIPE ERROR:", err);
+
+    return res.status(500).json({
+      error: err.message,
+    });
   }
 }
