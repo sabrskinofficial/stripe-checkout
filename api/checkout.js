@@ -32,9 +32,8 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      success_url: "https://example.com/success",
-      cancel_url: "https://example.com/cancel",
-    });
+     success_url: "https://v0-add-checkout-api.vercel.app/success",
+cancel_url: "https://v0-add-checkout-api.vercel.app/cancel",
 
     return res.redirect(303, session.url);
   } catch (err) {
