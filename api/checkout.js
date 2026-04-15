@@ -13,7 +13,7 @@ export default async function handler(req, res) {
             product_data: {
               name: "BASE44 Product",
             },
-            unit_amount: 4000,
+           unit_amount: Math.round(Number(req.query.amount) * 100)
           },
           quantity: 1,
         },
