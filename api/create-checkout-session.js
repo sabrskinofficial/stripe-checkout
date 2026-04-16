@@ -3,6 +3,12 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
+  console.log("🔥 STRIPE KEY MODE:", process.env.STRIPE_SECRET_KEY?.slice(0, 8));
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "POST only" });
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -21,10 +27,10 @@ export default async function handler(req, res) {
       cancel_url: "https://sabr-store.vercel.app/",
     });
 
-    res.status(200).json({ url: session.url });
+    return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error("STRIPE ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("❌ STRIPE ERROR:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
