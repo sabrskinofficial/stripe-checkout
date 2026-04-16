@@ -27,8 +27,8 @@ export default async function handler(req, res) {
       cancel_url: "https://sabr-store.vercel.app/cancel",
     });
 
-    res.json({ url: session.url });
+    return res.status(200).json({ url: session.url });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
