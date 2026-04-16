@@ -29,8 +29,8 @@ export default async function handler(req, res) {
         },
         quantity: item.quantity || 1,
       })),
-      success_url: "https://YOUR-SITE.vercel.app/success",
-      cancel_url: "https://YOUR-SITE.vercel.app/cancel",
+      success_url: "https://sabrskinco.base44.app/success",
+      cancel_url: "https://sabrskinco.base44.app/success",
     });
 
     return res.status(200).json({ url: session.url });
