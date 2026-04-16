@@ -3,6 +3,8 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
+  console.log("BODY:", req.body); // ✅ NOW SAFE
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
   }
@@ -14,13 +16,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid cart" });
     }
 
+    if (cart.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
+
     const line_items = cart.map((item) => ({
       price_data: {
         currency: "aud",
         product_data: {
-          name: item.name,
+          name: item.name || "Item",
         },
-        unit_amount: Math.round(Number(item.price) * 100),
+        unit_amount: Math.round(Number(item.price || 0) * 100),
       },
       quantity: item.qty || 1,
     }));
@@ -36,7 +42,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error(err);
+    console.error("STRIPE ERROR:", err);
     return res.status(500).json({ error: err.message });
   }
 }
