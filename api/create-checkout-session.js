@@ -12,6 +12,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+ 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
   }
@@ -19,21 +20,17 @@ export default async function handler(req, res) {
   try {
     const { name, price } = req.body;
 
-    if (!name || !price) {
-      return res.status(400).json({ error: "Missing product data" });
-    }
-
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "payment",
+      payment_method_types: ["card"],
       line_items: [
         {
           price_data: {
             currency: "usd",
             product_data: {
-              name: name,
+              name,
             },
-            unit_amount: Math.round(price * 100), // cents
+            unit_amount: Math.round(price * 100),
           },
           quantity: 1,
         },
@@ -45,7 +42,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error("Stripe error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
