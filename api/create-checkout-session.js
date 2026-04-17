@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 
+// ✅ standard env name (BEST PRACTICE)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
@@ -14,8 +15,8 @@ export default async function handler(req, res) {
 
     console.log("📦 CART:", cart);
 
-    if (!cart?.length) {
-      return res.status(400).json({ error: "Cart is empty" });
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: "Cart is empty or invalid" });
     }
 
     const line_items = cart.map((item) => ({
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
         product_data: {
           name: item.name || "Item",
         },
-        unit_amount: Math.round(Number(item.price) * 100),
+        unit_amount: Math.round(Number(item.price || 0) * 100),
       },
       quantity: item.qty || 1,
     }));
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
+
       success_url: "https://sabr-store.vercel.app/success",
       cancel_url: "https://sabr-store.vercel.app/",
     });
@@ -45,7 +47,7 @@ export default async function handler(req, res) {
     console.error("❌ STRIPE ERROR:", err);
 
     return res.status(500).json({
-      error: err.message,
+      error: err.message || "Stripe checkout failed",
     });
   }
 }
