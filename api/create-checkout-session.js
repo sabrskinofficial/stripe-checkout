@@ -1,9 +1,8 @@
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-console.log("KEY CHECK:", process.env.STRIPE_SECRET_KEY);
+console.log("🔥🔥🔥 KEY CHECK:", process.env.STRIPE_SECRET_KEY);
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
