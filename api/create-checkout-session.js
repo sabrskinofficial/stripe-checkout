@@ -12,18 +12,37 @@ export default async function handler(req, res) {
   try {
     const { cart } = req.body;
 
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: "Cart is empty or invalid" });
+    }
+
+    const line_items = cart.map((item) => {
+      const price = Number(item.price);
+
+      if (!item.name) {
+        throw new Error("Missing item name");
+      }
+
+      if (!price || isNaN(price)) {
+        throw new Error(`Invalid price for: ${item.name}`);
+      }
+
+      return {
+        price_data: {
+          currency: "aud",
+          product_data: {
+            name: item.name,
+          },
+          unit_amount: Math.round(price * 100),
+        },
+        quantity: Number(item.qty) || 1,
+      };
+    });
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-
-      line_items: cart.map((item) => ({
-        price_data: {
-          currency: "aud",
-          product_data: { name: item.name },
-          unit_amount: Math.round(Number(item.price) * 100),
-        },
-        quantity: item.qty || 1,
-      })),
+      line_items,
 
       success_url:
         "https://sabrskinco.base44.app/success?session_id={CHECKOUT_SESSION_ID}",
@@ -34,6 +53,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error("Stripe error:", err);
+
+    return res.status(500).json({
+      error: err.message || "Stripe checkout failed",
+    });
   }
 }
