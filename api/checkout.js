@@ -36,12 +36,13 @@ export default async function handler(req, res) {
       quantity: item.qty || 1,
     }));
 
+    // ✅ Create Stripe session
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
 
-     
+      // 🔥 FIXED URLs (NO dynamic origin)
       success_url:
         "https://sabrskinco.base44.app/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url:
