@@ -1,9 +1,25 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || process.env.SECRET_KEY);
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY || process.env.SECRET_KEY
+);
+
+// CORS helper (IMPORTANT for Base44)
+function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
 
 export default async function handler(req, res) {
   console.log("🔥 API HIT");
+
+  // 🔥 CORS PRE-FLIGHT FIX
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
@@ -30,8 +46,10 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+
       line_items,
 
+      // KEEP YOUR BASE44 DOMAIN HERE
       success_url: "https://sabrskinco.base44.app/success",
       cancel_url: "https://sabrskinco.base44.app/",
     });
@@ -42,6 +60,9 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error("❌ STRIPE ERROR:", err);
-    return res.status(500).json({ error: err.message || "Stripe checkout failed" });
+
+    return res.status(500).json({
+      error: err.message || "Stripe checkout failed",
+    });
   }
 }
