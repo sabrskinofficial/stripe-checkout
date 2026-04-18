@@ -1,18 +1,13 @@
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY in environment variables");
-}
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  // ✅ FULL CORS FIX
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // 🔒 STRICT CORS (production-safe)
+  res.setHeader("Access-Control-Allow-Origin", "https://sabrskinco.base44.app");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // ✅ HANDLE PREFLIGHT (THIS FIXES "FAILED TO FETCH")
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -25,26 +20,20 @@ export default async function handler(req, res) {
     const { cart } = req.body;
 
     if (!Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).json({ error: "Cart is empty or invalid" });
+      return res.status(400).json({ error: "Cart is invalid" });
     }
 
     const line_items = cart.map((item) => {
       const price = Number(item.price);
 
-      if (!item.name) {
-        throw new Error("Missing item name");
-      }
-
-      if (!price || isNaN(price)) {
-        throw new Error(`Invalid price for: ${item.name}`);
+      if (!item.name || !price) {
+        throw new Error("Invalid cart item");
       }
 
       return {
         price_data: {
           currency: "aud",
-          product_data: {
-            name: item.name,
-          },
+          product_data: { name: item.name },
           unit_amount: Math.round(price * 100),
         },
         quantity: Number(item.qty) || 1,
@@ -54,21 +43,22 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+
       line_items,
 
       success_url:
         "https://sabrskinco.base44.app/success?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url:
-        "https://sabrskinco.base44.app/",
+
+      cancel_url: "https://sabrskinco.base44.app/",
     });
 
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error("🔥 STRIPE ERROR:", err);
+    console.error("STRIPE ERROR:", err);
 
     return res.status(500).json({
-      error: err.message || "Stripe checkout failed",
+      error: "Payment failed. Please try again.",
     });
   }
 }
