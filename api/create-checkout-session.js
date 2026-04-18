@@ -3,7 +3,7 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  // 🔒 STRICT CORS (production-safe)
+  // CORS (safe for production)
   res.setHeader("Access-Control-Allow-Origin", "https://sabrskinco.base44.app");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -20,20 +20,23 @@ export default async function handler(req, res) {
     const { cart } = req.body;
 
     if (!Array.isArray(cart) || cart.length === 0) {
-      return res.status(400).json({ error: "Cart is invalid" });
+      return res.status(400).json({ error: "Cart is empty" });
     }
 
     const line_items = cart.map((item) => {
       const price = Number(item.price);
 
-      if (!item.name || !price) {
-        throw new Error("Invalid cart item");
+      if (!item.name) throw new Error("Missing product name");
+      if (!price || isNaN(price) || price <= 0) {
+        throw new Error(`Invalid price for: ${item.name}`);
       }
 
       return {
         price_data: {
           currency: "aud",
-          product_data: { name: item.name },
+          product_data: {
+            name: item.name,
+          },
           unit_amount: Math.round(price * 100),
         },
         quantity: Number(item.qty) || 1,
@@ -42,7 +45,10 @@ export default async function handler(req, res) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+
+      automatic_payment_methods: {
+        enabled: true,
+      },
 
       line_items,
 
@@ -55,10 +61,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
 
   } catch (err) {
-    console.error("STRIPE ERROR:", err);
+    console.error("🔥 STRIPE ERROR FULL:", err);
 
     return res.status(500).json({
-      error: "Payment failed. Please try again.",
+      error: err.message || "Stripe checkout failed",
     });
   }
 }
