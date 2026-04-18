@@ -1,9 +1,8 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export default async function handler(req, res) {
-  // CORS (safe for production)
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY); // ✅ MOVE HERE
+
   res.setHeader("Access-Control-Allow-Origin", "https://sabrskinco.base44.app");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -34,9 +33,7 @@ export default async function handler(req, res) {
       return {
         price_data: {
           currency: "aud",
-          product_data: {
-            name: item.name,
-          },
+          product_data: { name: item.name },
           unit_amount: Math.round(price * 100),
         },
         quantity: Number(item.qty) || 1,
@@ -45,16 +42,10 @@ export default async function handler(req, res) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-
-      automatic_payment_methods: {
-        enabled: true,
-      },
-
+      automatic_payment_methods: { enabled: true },
       line_items,
-
       success_url:
         "https://sabrskinco.base44.app/success?session_id={CHECKOUT_SESSION_ID}",
-
       cancel_url: "https://sabrskinco.base44.app/",
     });
 
