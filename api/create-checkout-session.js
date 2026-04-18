@@ -15,33 +15,48 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 🔥 HARD CHECK (prevents Stripe crashing with undefined key)
+    // 🔥 SAFE STRIPE INIT (this prevents your API key crash)
     const secretKey = process.env.STRIPE_SECRET_KEY;
 
     if (!secretKey) {
-      console.error("❌ STRIPE_SECRET_KEY missing in Vercel");
       return res.status(500).json({
-        error: "Server misconfigured (missing Stripe key)",
+        error: "Missing STRIPE_SECRET_KEY in Vercel environment",
       });
     }
 
     const stripe = new Stripe(secretKey);
 
+    // 🧺 OPTIONAL: cart from frontend (or fallback test item)
+    const { cart } = req.body || {};
+
+    const line_items =
+      Array.isArray(cart) && cart.length > 0
+        ? cart.map((item) => ({
+            price_data: {
+              currency: "aud",
+              product_data: {
+                name: item.name || "Product",
+              },
+              unit_amount: Math.round(Number(item.price || 0) * 100),
+            },
+            quantity: Number(item.qty || 1),
+          }))
+        : [
+            // fallback so it NEVER breaks
+            {
+              price_data: {
+                currency: "aud",
+                product_data: { name: "Test Product" },
+                unit_amount: 1000,
+              },
+              quantity: 1,
+            },
+          ];
+
+    // 💳 STRIPE SESSION (THIS IS THE PART YOU ASKED ABOUT)
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "aud",
-            product_data: {
-              name: "Test Product",
-            },
-            unit_amount: 1000,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items,
       success_url: "https://sabrskinco.base44.app/success",
       cancel_url: "https://sabrskinco.base44.app/",
     });
